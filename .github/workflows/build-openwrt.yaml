@@ -1,0 +1,49 @@
+name: Build OpenWrt for Orange Pi Zero 3
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential binutils bzip2 diffutils findutils flex gawk gcc g++ \
+                                 grep make perl python3 rsync subversion unzip wget libz-dev
+
+      - name: Update and install feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Import Orange Pi Zero 3 configuration
+        run: |
+          cp configs/orangepi-zero3-h618_defconfig .config
+          make defconfig
+
+      - name: Download sources
+        run: |
+          make download -j8
+
+      - name: Build firmware
+        run: |
+          make -j8 V=s
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-firmware
+          path: bin/
