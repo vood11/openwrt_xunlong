@@ -1,4 +1,4 @@
-name: Build OpenWrt for Orange Pi Zero 3
+name: Build OpenWrt for Orange Pi Zero 3 - part2
 
 on:
   workflow_dispatch:
