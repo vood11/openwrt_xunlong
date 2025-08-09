@@ -1,0 +1,53 @@
+name: Build OpenWrt for Orange Pi Zero 3
+
+on:
+  workflow_dispatch:
+    inputs:
+      defconfig:
+        description: 'Defconfig file to use (e.g., orangepi-zero3-h618_defconfig)'
+        required: true
+        default: 'orangepi-zero3-h618_defconfig'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential binutils bzip2 diffutils findutils flex gawk gcc g++ \
+                                 grep make perl python3 rsync subversion unzip wget libz-dev
+
+      - name: Update and install feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Import configuration
+        run: |
+          if [ -f "configs/${{ github.event.inputs.defconfig }}" ]; then
+            cp "configs/${{ github.event.inputs.defconfig }}" .config
+          else
+            echo "Error: Defconfig file configs/${{ github.event.inputs.defconfig }} not found"
+            exit 1
+          fi
+          make defconfig
+
+      - name: Download sources
+        run: |
+          make download -j8
+
+      - name: Build firmware
+        run: |
+          make -j8 V=s
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-firmware
+          path: bin/
